@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giám Định XML to Excel - BHYT</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-zone:hover {
+            background: #eef2ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-zone.dragover {
+            background: #ddd6fe;
+            border-color: #7c3aed;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            font-size: 18px;
+            color: #4338ca;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .status {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+            display: block;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+            display: block;
+        }
+        
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+            display: block;
+        }
+        
+        .status.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+            display: block;
+        }
+        
+        .preview-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .preview-section.active {
+            display: block;
+        }
+        
+        .sheet-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #e5e7eb;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            max-height: 500px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        td {
+            padding: 12px;
+            border-top: 1px solid #f3f4f6;
+            color: #4b5563;
+        }
+        
+        tbody tr:hover {
+            background: #faf5ff;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #9333ea;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #6b21a8;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            color: #1f2937;
+            font-weight: 700;
+        }
+        
+        .file-info {
+            background: #eff6ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .file-info h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .file-info p {
+            color: #1e3a8a;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .debug-box {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .debug-box.active {
+            display: block;
+        }
+        
+        .guide-box {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+            margin-top: 30px;
+        }
+        
+        .guide-box h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+        
+        .guide-box ol {
+            color: #78350f;
+            padding-left: 20px;
+        }
+        
+        .guide-box li {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Công cụ Giám định BHYT - XML to Excel</h1>
+            <p class="subtitle">Tự động giải mã Base64 và chuyển đổi XML sang Excel với nhiều Sheet</p>
+        </div>
+        
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Kéo thả file XML vào đây hoặc nhấn để chọn</div>
+            <div class="upload-hint">Hỗ trợ: File XML đã mã hóa Base64 (GIAMDINHHS)</div>
+            <input type="file" id="fileInput" accept=".xml">
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                📂 Chọn File XML
+            </button>
+            <button id="downloadBtn" class="btn btn-success hidden" onclick="downloadExcel()">
+                📥 Tải xuống Excel
+            </button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="debugBox" class="debug-box"></div>
+        
+        <div id="fileInfo" class="file-info hidden">
+            <h3>📋 Thông tin file:</h3>
+            <p><strong>Tên file:</strong> <span id="fileName"></span></p>
+            <p><strong>Mã cơ sở KCB:</strong> <span id="maCSKCB"></span></p>
+            <p><strong>Ngày lập:</strong> <span id="ngayLap"></span></p>
+            <p><strong>Số lượng hồ sơ:</strong> <span id="soLuongHS"></span></p>
+        </div>
+        
+        <div id="statsSection" class="hidden">
+            <div class="stats-grid" id="statsGrid"></div>
+        </div>
+        
+        <div id="previewSection" class="preview-section">
+            <h2 style="margin-bottom: 20px; color: #333;">📊 Xem trước dữ liệu:</h2>
+            <div class="sheet-tabs" id="sheetTabs"></div>
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="guide-box">
+            <h3>💡 Hướng dẫn sử dụng:</h3>
+            <ol>
+                <li>Chọn file XML đã được mã hóa Base64 (định dạng GIAMDINHHS)</li>
+                <li>Hệ thống tự động giải mã và phân tích cấu trúc</li>
+                <li>Xem trước dữ liệu theo từng sheet (XML1, XML3, XML5...)</li>
+                <li>Nhấn "Tải xuống Excel" để lưu file với đầy đủ các sheet</li>
+                <li>File Excel sẽ chứa: Thông tin chung + Chi tiết DVKT + Diễn biến LS...</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let workbookData = {};
+        let currentSheet = '';
+        let xmlFileName = '';
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status ' + type;
+            statusDiv.innerHTML = message;
+        }
+
+        function debugLog(message) {
+            const debugBox = document.getElementById('debugBox');
+            debugBox.textContent += message + '\n';
+            debugBox.classList.add('active');
+            console.log(message);
+        }
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.xml')) {
+                showStatus('❌ Vui lòng chọn file XML', 'error');
+                return;
+            }
+
+            xmlFileName = file.name.replace('.xml', '');
+            showStatus('⏳ Đang xử lý file...', 'info');
+            document.getElementById('debugBox').textContent = '';
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    processXMLFile(e.target.result);
+                } catch (error) {
+                    showStatus('❌ Lỗi: ' + error.message, 'error');
+                    debugLog('ERROR: ' + error.message);
+                    console.error('Error:', error);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function cleanBase64String(str) {
+            // Remove all whitespace, newlines, and non-base64 characters
+            return str.replace(/[^A-Za-z0-9+/=]/g, '');
+        }
+
+        function decodeBase64WithBOM(base64String) {
+            try {
+                // Clean the base64 string
+                const cleanedBase64 = cleanBase64String(base64String);
+                
+                // Decode base64
+                const binaryString = atob(cleanedBase64);
+                
+                // Convert to Uint8Array to handle encoding properly
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Decode using TextDecoder to handle UTF-8 properly
+                const decoder = new TextDecoder('utf-8');
+                let decodedText = decoder.decode(bytes);
+                
+                // Remove BOM if present (EF BB BF in UTF-8)
+                if (decodedText.charCodeAt(0) === 0xFEFF) {
+                    decodedText = decodedText.substring(1);
+                }
+                
+                // Remove any leading/trailing whitespace
+                decodedText = decodedText.trim();
+                
+                // Ensure it starts with <?xml
+                if (!decodedText.startsWith('<?xml')) {
+                    // Try to find the start of XML
+                    const xmlStart = decodedText.indexOf('<?xml');
+                    if (xmlStart > 0) {
+                        decodedText = decodedText.substring(xmlStart);
+                    }
+                }
+                
+                return decodedText;
+            } catch (error) {
+                debugLog('Base64 decode error: ' + error.message);
+                throw new Error('Không thể giải mã Base64: ' + error.message);
+            }
+        }
+
+        function processXMLFile(xmlContent) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+            
+            const parserError = xmlDoc.getElementsByTagName('parsererror');
+            if (parserError.length > 0) {
+                showStatus('❌ File XML không hợp lệ', 'error');
+                return;
+            }
+
+            // Get root element info
+            const thongTinDonVi = xmlDoc.querySelector('THONGTINDONVI');
+            const thongTinHoSo = xmlDoc.querySelector('THONGTINHOSO');
+            
+            if (thongTinDonVi && thongTinHoSo) {
+                document.getElementById('maCSKCB').textContent = 
+                    thongTinDonVi.querySelector('MACSKCB')?.textContent || 'N/A';
+                document.getElementById('ngayLap').textContent = 
+                    formatDate(thongTinHoSo.querySelector('NGAYLAP')?.textContent) || 'N/A';
+                document.getElementById('soLuongHS').textContent = 
+                    thongTinHoSo.querySelector('SOLUONGHOSO')?.textContent || 'N/A';
+                document.getElementById('fileName').textContent = xmlFileName + '.xml';
+                document.getElementById('fileInfo').classList.remove('hidden');
+            }
+
+            // Get all FILEHOSO elements
+            const fileHoSos = xmlDoc.querySelectorAll('FILEHOSO');
+            
+            if (fileHoSos.length === 0) {
+                showStatus('❌ Không tìm thấy dữ liệu FILEHOSO', 'error');
+                return;
+            }
+
+            debugLog(`Found ${fileHoSos.length} FILEHOSO elements`);
+
+            workbookData = {};
+            let totalSheets = 0;
+            let errorCount = 0;
+
+            fileHoSos.forEach((fileHoSo, index) => {
+                const loaiHoSo = fileHoSo.querySelector('LOAIHOSO')?.textContent;
+                const noiDungFile = fileHoSo.querySelector('NOIDUNGFILE')?.textContent;
+                
+                debugLog(`\nProcessing ${loaiHoSo}...`);
+                
+                if (loaiHoSo && noiDungFile) {
+                    try {
+                        // Decode Base64 with proper handling
+                        const decodedXML = decodeBase64WithBOM(noiDungFile);
+                        
+                        debugLog(`Decoded length: ${decodedXML.length}`);
+                        debugLog(`First 100 chars: ${decodedXML.substring(0, 100)}`);
+                        
+                        // Parse decoded XML
+                        const innerDoc = parser.parseFromString(decodedXML, 'text/xml');
+                        
+                        // Check for parsing errors
+                        const innerError = innerDoc.getElementsByTagName('parsererror');
+                        if (innerError.length > 0) {
+                            debugLog(`Parse error in ${loaiHoSo}: ${innerError[0].textContent}`);
+                            errorCount++;
+                            return;
+                        }
+                        
+                        // Extract data based on XML structure
+                        const data = extractDataFromXML(innerDoc);
+                        
+                        if (data.length > 0) {
+                            workbookData[loaiHoSo] = data;
+                            totalSheets++;
+                            debugLog(`✓ ${loaiHoSo}: ${data.length} rows extracted`);
+                        } else {
+                            debugLog(`✗ ${loaiHoSo}: No data found`);
+                        }
+                    } catch (error) {
+                        debugLog(`✗ Error in ${loaiHoSo}: ${error.message}`);
+                        errorCount++;
+                        console.error(`Error processing ${loaiHoSo}:`, error);
+                    }
+                }
+            });
+
+            if (totalSheets === 0) {
+                showStatus('❌ Không thể trích xuất dữ liệu từ file. Xem log bên dưới để biết chi tiết.', 'error');
+                return;
+            }
+
+            displayStats();
+            displaySheetTabs();
+            
+            let statusMsg = `✅ Đã xử lý thành công ${totalSheets} sheet dữ liệu`;
+            if (errorCount > 0) {
+                statusMsg += ` (${errorCount} sheet lỗi)`;
+            }
+            showStatus(statusMsg, totalSheets > 0 ? 'success' : 'warning');
+            
+            document.getElementById('downloadBtn').classList.remove('hidden');
+        }
+
+        function extractDataFromXML(xmlDoc) {
+            const data = [];
+            
+            const rootElement = xmlDoc.documentElement;
+            const firstLevelChildren = rootElement.children;
+            
+            if (firstLevelChildren.length === 0) {
+                debugLog('No first level children found');
+                return data;
+            }
+            
+            // Usually the container is the first child
+            const container = firstLevelChildren[0];
+            const items = container.children;
+            
+            if (items.length === 0) {
+                debugLog(`No items found in container: ${container.tagName}`);
+                return data;
+            }
+            
+            debugLog(`Found ${items.length} items in ${container.tagName}`);
+            
+            // Get column names from first item
+            const firstItem = items[0];
+            const columnNames = [];
+            
+            for (let i = 0; i < firstItem.children.length; i++) {
+                columnNames.push(firstItem.children[i].tagName);
+            }
+            
+            debugLog(`Columns: ${columnNames.join(', ')}`);
+            
+            // Extract all rows
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const record = {};
+                
+                for (let j = 0; j < item.children.length; j++) {
+                    const node = item.children[j];
+                    const tagName = node.tagName;
+                    const value = node.textContent.trim();
+                    record[tagName] = value;
+                }
+                
+                data.push(record);
+            }
+            
+            return data;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr.length !== 8) return dateStr;
+            return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
+        }
+
+        function displayStats() {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = '';
+            
+            Object.keys(workbookData).forEach(sheetName => {
+                const data = workbookData[sheetName];
+                const statCard = document.createElement('div');
+                statCard.className = 'stat-card';
+                statCard.innerHTML = `
+                    <div class="stat-label">${sheetName}</div>
+                    <div class="stat-value">${data.length} dòng</div>
+                `;
+                statsGrid.appendChild(statCard);
+            });
+            
+            document.getElementById('statsSection').classList.remove('hidden');
+        }
+
+        function displaySheetTabs() {
+            const sheetTabs = document.getElementById('sheetTabs');
+            sheetTabs.innerHTML = '';
+            
+            const sheets = Object.keys(workbookData);
+            
+            sheets.forEach((sheetName, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'tab' + (index === 0 ? ' active' : '');
+                tab.textContent = sheetName + ` (${workbookData[sheetName].length})`;
+                tab.onclick = () => switchSheet(sheetName);
+                sheetTabs.appendChild(tab);
+            });
+            
+            if (sheets.length > 0) {
+                switchSheet(sheets[0]);
+            }
+        }
+
+        function switchSheet(sheetName) {
+            currentSheet = sheetName;
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.startsWith(sheetName)) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            displayTable(workbookData[sheetName]);
+            document.getElementById('previewSection').classList.add('active');
+        }
+
+        function displayTable(data) {
+            if (!data || data.length === 0) return;
+            
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            const headerRow = document.createElement('tr');
+            const columns = Object.keys(data[0]);
+            
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+            tableHead.appendChild(headerRow);
+            
+            const displayRows = data.slice(0, 50);
+            displayRows.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                columns.forEach(col => {
+                    const td = document.createElement('td');
+                    const value = row[col] || '';
+                    td.textContent = value.length > 150 ? value.substring(0, 150) + '...' : value;
+                    td.title = value;
+                    tr.appendChild(td);
+                });
+                
+                tableBody.appendChild(tr);
+            });
+            
+            if (data.length > 50) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = columns.length;
+                td.style.textAlign = 'center';
+                td.style.color = '#9ca3af';
+                td.style.fontStyle = 'italic';
+                td.textContent = `... và ${data.length - 50} dòng khác (sẽ có đầy đủ trong file Excel)`;
+                tr.appendChild(td);
+                tableBody.appendChild(tr);
+            }
+        }
+
+        function downloadExcel() {
+            if (Object.keys(workbookData).length === 0) {
+                alert('Không có dữ liệu để xuất');
+                return;
+            }
+
+            showStatus('⏳ Đang tạo file Excel...', 'info');
+
+            try {
+                const wb = XLSX.utils.book_new();
+                
+                Object.keys(workbookData).forEach(sheetName => {
+                    const data = workbookData[sheetName];
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    
+                    const columns = Object.keys(data[0]);
+                    const colWidths = columns.map(col => {
+                        const maxLength = Math.max(
+                            col.length,
+                            ...data.map(row => (row[col] || '').toString().length)
+                        );
+                        return { wch: Math.min(maxLength + 2, 50) };
+                    });
+                    ws['!cols'] = colWidths;
+                    
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                });
+                
+                const fileName = `BHYT_${xmlFileName}_${new Date().getTime()}.xlsx`;
+                
+                XLSX.writeFile(wb, fileName);
+                showStatus('✅ Đã tải xuống file Excel thành công!', 'success');
+                
+            } catch (error) {
+                showStatus('❌ Lỗi khi tạo file Excel: ' + error.message, 'error');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
