@@ -476,39 +476,28 @@
         }
 
         function cleanBase64String(str) {
-            // Remove all whitespace, newlines, and non-base64 characters
             return str.replace(/[^A-Za-z0-9+/=]/g, '');
         }
 
         function decodeBase64WithBOM(base64String) {
             try {
-                // Clean the base64 string
                 const cleanedBase64 = cleanBase64String(base64String);
-                
-                // Decode base64
                 const binaryString = atob(cleanedBase64);
-                
-                // Convert to Uint8Array to handle encoding properly
                 const bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
                 
-                // Decode using TextDecoder to handle UTF-8 properly
                 const decoder = new TextDecoder('utf-8');
                 let decodedText = decoder.decode(bytes);
                 
-                // Remove BOM if present (EF BB BF in UTF-8)
                 if (decodedText.charCodeAt(0) === 0xFEFF) {
                     decodedText = decodedText.substring(1);
                 }
                 
-                // Remove any leading/trailing whitespace
                 decodedText = decodedText.trim();
                 
-                // Ensure it starts with <?xml
                 if (!decodedText.startsWith('<?xml')) {
-                    // Try to find the start of XML
                     const xmlStart = decodedText.indexOf('<?xml');
                     if (xmlStart > 0) {
                         decodedText = decodedText.substring(xmlStart);
@@ -532,7 +521,6 @@
                 return;
             }
 
-            // Get root element info
             const thongTinDonVi = xmlDoc.querySelector('THONGTINDONVI');
             const thongTinHoSo = xmlDoc.querySelector('THONGTINHOSO');
             
@@ -547,7 +535,6 @@
                 document.getElementById('fileInfo').classList.remove('hidden');
             }
 
-            // Get all FILEHOSO elements
             const fileHoSos = xmlDoc.querySelectorAll('FILEHOSO');
             
             if (fileHoSos.length === 0) {
@@ -569,16 +556,13 @@
                 
                 if (loaiHoSo && noiDungFile) {
                     try {
-                        // Decode Base64 with proper handling
                         const decodedXML = decodeBase64WithBOM(noiDungFile);
                         
                         debugLog(`Decoded length: ${decodedXML.length}`);
                         debugLog(`First 100 chars: ${decodedXML.substring(0, 100)}`);
                         
-                        // Parse decoded XML
                         const innerDoc = parser.parseFromString(decodedXML, 'text/xml');
                         
-                        // Check for parsing errors
                         const innerError = innerDoc.getElementsByTagName('parsererror');
                         if (innerError.length > 0) {
                             debugLog(`Parse error in ${loaiHoSo}: ${innerError[0].textContent}`);
@@ -586,8 +570,7 @@
                             return;
                         }
                         
-                        // Extract data based on XML structure
-                        const data = extractDataFromXML(innerDoc);
+                        const data = extractDataFromXML(innerDoc, loaiHoSo);
                         
                         if (data.length > 0) {
                             workbookData[loaiHoSo] = data;
@@ -621,10 +604,32 @@
             document.getElementById('downloadBtn').classList.remove('hidden');
         }
 
-        function extractDataFromXML(xmlDoc) {
+        function extractDataFromXML(xmlDoc, sheetName) {
             const data = [];
-            
             const rootElement = xmlDoc.documentElement;
+            
+            debugLog(`Root element: ${rootElement.tagName}`);
+            
+            // Đặc biệt xử lý XML1 (TONG_HOP) - dữ liệu nằm trực tiếp ở root
+            if (sheetName === 'XML1' || rootElement.tagName === 'TONG_HOP') {
+                debugLog('Processing as XML1 (single record format)');
+                
+                const record = {};
+                for (let i = 0; i < rootElement.children.length; i++) {
+                    const child = rootElement.children[i];
+                    record[child.tagName] = child.textContent.trim();
+                }
+                
+                // Chỉ thêm nếu có dữ liệu
+                if (Object.keys(record).length > 0) {
+                    data.push(record);
+                    debugLog(`Extracted ${Object.keys(record).length} fields from root`);
+                }
+                
+                return data;
+            }
+            
+            // Xử lý các XML khác (có container)
             const firstLevelChildren = rootElement.children;
             
             if (firstLevelChildren.length === 0) {
@@ -632,8 +637,9 @@
                 return data;
             }
             
-            // Usually the container is the first child
             const container = firstLevelChildren[0];
+            debugLog(`Container: ${container.tagName}`);
+            
             const items = container.children;
             
             if (items.length === 0) {
@@ -643,7 +649,6 @@
             
             debugLog(`Found ${items.length} items in ${container.tagName}`);
             
-            // Get column names from first item
             const firstItem = items[0];
             const columnNames = [];
             
@@ -653,7 +658,6 @@
             
             debugLog(`Columns: ${columnNames.join(', ')}`);
             
-            // Extract all rows
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
                 const record = {};
